@@ -139,7 +139,7 @@ class App extends React.Component<Props, GameState> {
           <button onClick={this.undoStep}>Undo</button>
         </div>
         <div id="instructions">
-          <div>Instructions</div>
+          <div>=== Instructions ===</div>
           <div>{this.checkPlayer()}</div>
         </div>
       </div>
