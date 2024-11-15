@@ -1,8 +1,13 @@
 #board {
   display: grid;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: 140px 140px 140px;
+  grid-template-rows: 140px 140px 140px;
   background-color: #2196F3;
-  padding: 10px
+  width: 420px;
+  padding-top: 30px;
+  padding-right: 30px;
+  padding-bottom: 30px;
+  padding-left: 30px;
 }
 
 .cell {
@@ -10,28 +15,32 @@
   border: 1px solid rgba(0, 0, 0, 0.8);
   padding: 20px;
   font-size: 30px;
-  height: 25vmin;
+  height: 100px;
+  width: 100px;
   text-align: center;
 }
 
 #bottombar {
-  height: 5vh;
+  height: 100px;
+  align-content: center;
 }
 
 #instructions {
-  height: 5vh;
+  height: 200px;
+  width: 480px;
   background-color: white;
-  padding: 0px;
+  padding-top: 15px;
   margin: 0px;
   text-align: center;
   border: 1px solid black;
 }
 
 #bottombar button {
-  width: 50%;
-  /* height: 100%; */
+  width: 240px;
+  height: 100%;
   margin: 0;
   padding: 0;
+  padding: 20px;
   position: relative;
   float: left;
   font-size: 2vw
@@ -44,4 +53,16 @@ body {
   padding: 0;
 }
 
-.playable { background-color: red;}
+.playable { 
+  background-color: gray;
+  height: 100px;
+  width: 100px;
+}
+
+.unplayable {
+  background-color: gold;
+  text-align: center;
+  vertical-align: middle;
+  height: 100px;
+  width: 100px;
+}

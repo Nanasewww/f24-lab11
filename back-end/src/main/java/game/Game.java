@@ -68,4 +68,10 @@ public class Game {
             return board.getCell(1, 1);
         return null;
     }
+
+    public Game undo() {
+        Game lastHistory = this.history.get(this.history.size() - 1);
+        this.history.remove(this.history.size() - 1);
+        return new Game(lastHistory.board, lastHistory.player, this.history);
+    }
 }
