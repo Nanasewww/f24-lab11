@@ -1,8 +1,19 @@
 #board {
   display: grid;
-  grid-template-columns: auto auto auto;
-  background-color: #2196F3;
-  padding: 10px
+  grid-template-columns: 140px 140px 140px 140px 140px;
+  grid-template-rows: 140px 140px 140px 140px 140px;
+  background-color:darkgrey;
+  width: 700px;
+  padding-top: 30px;
+  padding-right: 30px;
+  padding-bottom: 30px;
+  padding-left: 30px;
+}
+
+#root {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .cell {
@@ -10,31 +21,37 @@
   border: 1px solid rgba(0, 0, 0, 0.8);
   padding: 20px;
   font-size: 30px;
-  height: 25vmin;
+  height: 100px;
+  width: 100px;
   text-align: center;
 }
 
 #bottombar {
-  height: 5vh;
+  height: 60px;
+  align-content: center;
 }
 
 #instructions {
-  height: 5vh;
+  height: 100px;
+  width: 720px;
   background-color: white;
-  padding: 0px;
+  padding-top: 15px;
   margin: 0px;
   text-align: center;
   border: 1px solid black;
+  font-size: 20px;
+  line-height: 150%;
 }
 
 #bottombar button {
   width: 50%;
-  /* height: 100%; */
+  height: 100%;
   margin: 0;
   padding: 0;
+  padding: 10px;
   position: relative;
   float: left;
-  font-size: 2vw
+  font-size: 30px
 }
 
 html,
@@ -44,4 +61,38 @@ body {
   padding: 0;
 }
 
-.playable { background-color: red;}
+.unselected { 
+  background-color: gray;
+  height: 100px;
+  width: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.selected { 
+  background-color:cyan;
+  height: 100px;
+  width: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.player1 {
+  background-color:moccasin;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  width: 100px;
+}
+
+.player2 {
+  background-color:aquamarine;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  width: 100px;
+}

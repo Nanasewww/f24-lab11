@@ -8,6 +8,32 @@ import BoardCell from './Cell';
  */
 interface Props { }
 
+class Vector2D {
+  private x: number;
+  private y: number;
+  constructor(x0: number, y0: number) {
+    this.x = x0;
+    this.y = y0;
+  }
+  public getX(): number {
+    return this.x;
+  }
+  public getY(): number {
+    return this.y;
+  }
+  public equal(ax: number, ay: number): boolean {
+    return ax === this.x && ay === this.y;
+  }
+}
+
+enum State {
+  Initialize = 0,
+  Move = 1,
+  Build = 2
+}
+
+let selectedCells: Vector2D[] = [];
+
 /**
  * Using generics to specify the type of props and state.
  * props and state is a special field in a React component.
@@ -25,6 +51,17 @@ interface Props { }
  */
 class App extends React.Component<Props, GameState> {
   private initialized: boolean = false;
+  private gameState: State = State.Initialize;
+  private initializeCount: number = 0;
+
+  static API_ENDPOINTS = ['/initialize', '/move', '/build']
+  
+  static ALERT_MESSAGES = [
+    'Need two positions to initialize workers!',
+    'Need a position to move selected worker!',
+    'Need a position to build a tower!',
+  ]
+  static SELECT_LEN = [2, 1, 1]
 
   /**
    * @param props has type Props
@@ -34,7 +71,16 @@ class App extends React.Component<Props, GameState> {
     /**
      * state has type GameState as specified in the class inheritance.
      */
-    this.state = { cells: [] }
+    this.state = { cells: [], player: 0, winner: -1 };
+  }
+
+  updateState(json: any) {
+    this.setState({cells: json['cells'], player: json['player'], winner: json['winner']});
+  }
+
+  makeApiCall = async (url: string) => {
+    const response = await fetch(url)
+    return await response.json()
   }
 
   /**
@@ -43,9 +89,26 @@ class App extends React.Component<Props, GameState> {
    * just an issue of Javascript.
    */
   newGame = async () => {
-    const response = await fetch('/newgame');
-    const json = await response.json();
-    this.setState({ cells: json['cells'] });
+    const json = await this.makeApiCall('/newgame')
+    this.updateState(json);
+  }
+
+  select(x: number, y: number): React.MouseEventHandler {
+    return async (e) => {
+      e.preventDefault();
+      const maxSelected = this.gameState === State.Initialize ? 2 : 1;
+      if (maxSelected === 1) {
+        selectedCells = [new Vector2D(x, y)];
+      } else {
+        const index = selectedCells.findIndex(item => item.equal(x, y));
+        if (index !== -1) 
+          selectedCells.splice(index, 1)
+        else if (selectedCells.length < maxSelected)
+          selectedCells.push(new Vector2D(x, y))
+      }
+      const json = await this.makeApiCall(`/select?x=${x}&y=${y}`)
+      this.updateState(json)
+    }
   }
 
   /**
@@ -55,35 +118,75 @@ class App extends React.Component<Props, GameState> {
    * @param y 
    * @returns 
    */
-  play(x: number, y: number): React.MouseEventHandler {
+
+  handleAction = async (currentState: State): Promise<boolean> => {
+    const length = App.SELECT_LEN[currentState]
+    if (selectedCells.length === length) {
+      var url = `${App.API_ENDPOINTS[currentState]}?`
+      for (var i = 0; i < length; ++i) {
+        if (i !== 0) url += '&'
+        url += `x${i}=${selectedCells[i].getX()}&y${i}=${selectedCells[i].getY()}`
+      }
+      const json = await this.makeApiCall(url)
+      if (json) this.updateState(json)
+      selectedCells = []
+      return true
+    } else {
+      alert(App.ALERT_MESSAGES[currentState])
+      return false
+    }
+  };
+  
+  confirm = async () => {
+    switch (this.gameState) {
+      case State.Initialize:
+        if (await this.handleAction(State.Initialize)) {
+          if (++this.initializeCount >= 2) this.gameState = State.Move;
+        }
+        break
+  
+      case State.Move:
+        if (await this.handleAction(State.Move)) {
+          this.gameState = State.Build
+        }
+        break
+  
+      case State.Build:
+        if (await this.handleAction(State.Build)) {
+          this.gameState = State.Move
+        }
+        break
+  
+      default:
+        console.warn('Unknown game state:', this.gameState);
+        break
+    }
+  };
+  
+
+  chooseWorker(index: number): React.MouseEventHandler {
     return async (e) => {
       // prevent the default behavior on clicking a link; otherwise, it will jump to a new page.
       e.preventDefault();
-      const response = await fetch(`/play?x=${x}&y=${y}`)
+      const response = await fetch(`/chooseworker?index=${index}`)
       const json = await response.json();
-      this.setState({ cells: json['cells'] });
+      this.updateState(json);
     }
   }
 
   createCell(cell: Cell, index: number): React.ReactNode {
-    if (cell.playable)
-      /**
-       * key is used for React when given a list of items. It
-       * helps React to keep track of the list items and decide
-       * which list item need to be updated.
-       * @see https://reactjs.org/docs/lists-and-keys.html#keys
-       */
-      return (
-        <div key={index}>
-          <a href='/' onClick={this.play(cell.x, cell.y)}>
-            <BoardCell cell={cell}></BoardCell>
-          </a>
-        </div>
-      )
-    else
-      return (
-        <div key={index}><BoardCell cell={cell}></BoardCell></div>
-      )
+    selectedCells.forEach( (item) => {
+      if(item.equal(cell.x, cell.y)) {
+        cell.selected = true
+      }
+    })
+    return (
+      <div key={index}>
+        <a href='/' onClick={this.select(cell.x, cell.y)}>
+          <BoardCell cell={cell}></BoardCell>
+        </a>
+      </div>
+    )
   }
 
   /**
@@ -99,6 +202,15 @@ class App extends React.Component<Props, GameState> {
     if (!this.initialized) {
       this.newGame();
       this.initialized = true;
+    }
+  }
+
+  checkPlayer(): string {
+    if (this.state.winner >= 0) {
+      return "Player " + this.state.winner.toString() + " wins!!!";
+    }
+    else {
+      return "Current Player: player " + this.state.player.toString();
     }
   }
 
@@ -119,9 +231,16 @@ class App extends React.Component<Props, GameState> {
           {this.state.cells.map((cell, i) => this.createCell(cell, i))}
         </div>
         <div id="bottombar">
-          <button onClick={/* get the function, not call the function */this.newGame}>New Game</button>
-          {/* Exercise: implement Undo function */}
-          <button>Undo</button>
+          <button onClick={this.newGame}>New Game</button>
+          <button onClick={this.confirm}>Confirm</button>
+        </div>
+        <div id="bottombar">
+          <button onClick={this.chooseWorker(0)}>Worker1</button>
+          <button onClick={this.chooseWorker(1)}>Worker2</button>
+        </div>
+        <div id="instructions">
+          <div>=== Instructions ===</div>
+          <div>{this.checkPlayer()}</div>
         </div>
       </div>
     );
