@@ -27,7 +27,7 @@ class BoardCell extends React.Component<Props> {
       //<div className={`cell ${style}`}>{this.props.cell.text}</div>
       <div className={`cell ${style}`}>
         <div className={`tower tower-${this.props.cell.height}`}></div>
-        <div className="player">{this.props.cell.text + (this.props.cell.workerId > 0 ? this.props.cell.workerId : "")}</div>
+        <div className="player">{this.props.cell.workerId > 0 ? this.symbols[this.props.cell.playerId-1] + this.props.cell.workerId : ""}</div>
         <div className="tower-label">{this.props.cell.height > 0 ? this.props.cell.height : ""}</div>
       </div>
     )

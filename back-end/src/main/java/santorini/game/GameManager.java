@@ -11,12 +11,23 @@ import santorini.map.Space;
 import santorini.map.towerblock.DomeBlock;
 import santorini.map.towerblock.NormalBlock;
 
+enum GameState {
+    Initialize,
+    Move,
+    Build,
+    End
+}
+
 public class GameManager {
     private final Player[] players;
     private final Map map;
+
     private ValidChecker availableChecker, moveChecker, buildChecker;
     private int currentPlayerId;
     private Player currentPlayer;
+
+    private GameState gameState;
+    private int initialized = 0;
 
     public GameManager(int playerNum) {
         this.players = new Player[playerNum];
@@ -27,6 +38,7 @@ public class GameManager {
         initializeCheckers();
         this.currentPlayerId = 0;
         this.currentPlayer = this.players[0];
+        this.gameState = GameState.Initialize;
     }
 
     public int getCurrentPlayer() {
@@ -49,11 +61,42 @@ public class GameManager {
      * @return {@code true} if the worker index is valid
      */
     public boolean chooseWorker(int workerIndex) {
-        if (workerIndex < 0 || workerIndex >= Player.workerNum) {
+        if (this.gameState != GameState.Move || workerIndex < 0 || workerIndex >= Player.workerNum) {
             return false;
         }
         this.currentPlayer.setCurrentWorker(workerIndex);
         return true;
+    }
+
+    public boolean checkTarget(Vector2D target) {
+        ValidChecker checker;
+        switch (this.gameState) {
+            case Initialize -> { checker = this.availableChecker; }
+            case Move -> { checker = this.moveChecker; }
+            case Build -> { checker = this.buildChecker; }
+            default -> { checker = null; }
+        }
+        return checker != null && checkPosition(target, this.currentPlayer.getCurrentWorker().getPosition(), checker);
+    }
+
+    public boolean handleAction(Vector2D target) {
+        switch (this.gameState) {
+            case Initialize-> { return initializeWorker(target); }
+            case Move-> { return moveWorker(target); }
+            case Build-> { return buildBlock(target); }
+            default -> {}
+        }
+        return false;
+    }
+
+    public String getState() {
+        switch (this.gameState) {
+            case Initialize-> { return "Initialize"; }
+            case Move-> { return "Move"; }
+            case Build-> { return "Build"; }
+            default -> {}
+        }
+        return "";
     }
 
     /**
@@ -61,12 +104,22 @@ public class GameManager {
      * @param target The position to move to.
      * @return {@code true} if the worker successfully moves to target position.
      */
-    public boolean initializeWorker(Vector2D target0, Vector2D target1) {
-        if (!checkPosition(target0, null, this.availableChecker) || !checkPosition(target1, null, this.availableChecker)) {
+    public boolean initializeWorker(Vector2D target) {
+        if (!checkPosition(target, null, this.availableChecker)) {
             return false;
         }
-        this.currentPlayer.moveWorker(0, map.getSpace(target0));
-        this.currentPlayer.moveWorker(1, map.getSpace(target1));
+        this.currentPlayer.moveWorker(map.getSpace(target));
+        ++initialized;
+        if (initialized == 4) {
+            nextState(GameState.Move);
+            nextTurn();
+        }
+        else if (initialized < 2) currentPlayer.setCurrentWorker(initialized);
+        else {
+            this.currentPlayerId = 1;
+            this.currentPlayer = this.players[1];
+            currentPlayer.setCurrentWorker(initialized-2);
+        }
         return true;
     }
 
@@ -80,6 +133,7 @@ public class GameManager {
             return false;
         }
         this.currentPlayer.moveWorker(map.getSpace(target));
+        nextState(GameState.Build);
         return true;
     }
 
@@ -98,6 +152,8 @@ public class GameManager {
         } else {
             buildTarget.buildBlock(new DomeBlock());
         }
+        nextState(GameState.Move);
+        nextTurn();
         return true;
     }
 
@@ -107,7 +163,10 @@ public class GameManager {
      */
     public int checkWinCondition() {
         for (int i = 0; i < this.players.length; ++i) {
-            if (this.players[i].checkWinCondition()) return i;
+            if (this.players[i].checkWinCondition()) {
+                this.gameState = GameState.End;
+                return i;
+            }
         }
         return -1;
     }
@@ -118,6 +177,10 @@ public class GameManager {
 
     public Worker getCurrentWorker() {
         return this.currentPlayer.getCurrentWorker();
+    }
+
+    private void nextState(GameState state) {
+        this.gameState = state;
     }
 
     private boolean checkPosition(Vector2D target, Space source, ValidChecker checker) {

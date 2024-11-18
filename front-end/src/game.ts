@@ -4,6 +4,7 @@ interface GameState {
   winner: number;
   positionX: number;
   positionY: number;
+  stateText: string;
 }
 
 interface Cell {
@@ -14,7 +15,6 @@ interface Cell {
   height: number;
   selected: boolean;
   available: boolean;
-  text: string;
 }
 
 export type { GameState, Cell }

@@ -152,7 +152,7 @@ body {
 }
 
 .cell.unavailable {
-  background-color: #cfd8dc;
+  background-color: #b6bdc1;
   color: #90a4ae;
   border-color: #b0bec5;
   cursor: not-allowed;
@@ -256,7 +256,7 @@ body {
 
 .player1.chosen {
   box-shadow: 0 0 10px 2px #f44336;
-  border: 4px solid #f44336;
+  border: 6px solid #f44336;
 }
 
 .player2 {
@@ -274,7 +274,7 @@ body {
 
 .player2.chosen {
   box-shadow: 0 0 10px 2px #e0a800;
-  border: 4px solid #e0a800;
+  border: 6px solid #e0a800;
 }
 
 .player1-text {

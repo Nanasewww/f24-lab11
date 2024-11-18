@@ -18,7 +18,8 @@ public class App extends NanoHTTPD {
     }
 
     private GameManager gameManager;
-    private boolean[] selected = new boolean[25];
+    private final boolean[] selected = new boolean[25];
+    private int lastSelected = 0;
 
     /**
      * Start the server at :8080 port.
@@ -35,7 +36,7 @@ public class App extends NanoHTTPD {
     }
 
     private void resetSelected() {
-        for (int i = 0; i<25; ++i) {
+        for (int i = 0; i < 25; ++i) {
             this.selected[i] = false;
         }
     }
@@ -49,35 +50,26 @@ public class App extends NanoHTTPD {
             switch (uri) {
                 case "/newgame":
                     this.gameManager = new GameManager(2);
+                    resetSelected();
                     break;
-                case "/initialize":
-                    Vector2D target1 = new Vector2D(Integer.parseInt(params.get("x0")), Integer.parseInt(params.get("y0")));
-                    Vector2D target2 = new Vector2D(Integer.parseInt(params.get("x1")), Integer.parseInt(params.get("y1")));
-                    if (this.gameManager.initializeWorker(target1, target2)) {
-                        this.gameManager.nextTurn();
-                        resetSelected();
-                    } else {
-                        throw new Exception("transction: Failed initializtion");
+                case "/action":
+                    target = new Vector2D(Integer.parseInt(params.get("x")), Integer.parseInt(params.get("y")));
+                    if (!this.gameManager.handleAction(target)) {
+                        throw new Exception("transction: Failed: invalid space");
                     }
+                    resetSelected();
                     break;
                 case "/select":
+                    target = new Vector2D(Integer.parseInt(params.get("x")), Integer.parseInt(params.get("y")));
+                    if (this.gameManager.checkTarget(target)) {
+                        int s = 5 * target.y + target.x;
+                        selected[lastSelected] = false;
+                        selected[s] = !selected[s];
+                        lastSelected = s;
+                    }
                     break;
                 case "/chooseworker":
                     this.gameManager.chooseWorker(Integer.parseInt(params.get("index")));
-                    break;
-                case "/move":
-                    target = new Vector2D(Integer.parseInt(params.get("x0")), Integer.parseInt(params.get("y0")));
-                    if (!this.gameManager.moveWorker(target)) {
-                        throw new Exception("transction: Failed movement");
-                    }
-                    break;
-                case "/build":
-                    target = new Vector2D(Integer.parseInt(params.get("x0")), Integer.parseInt(params.get("y0")));
-                    if (this.gameManager.buildBlock(target)) {
-                        this.gameManager.nextTurn();
-                    } else {
-                        throw new Exception("transction: Failed building");
-                    }
                     break;
                 default:
                     throw new Exception("The requested resource does not exist");
