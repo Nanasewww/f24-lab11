@@ -34,25 +34,11 @@ enum State {
 
 let selectedCells: Vector2D[] = [];
 
-/**
- * Using generics to specify the type of props and state.
- * props and state is a special field in a React component.
- * React will keep track of the value of props and state.
- * Any time there's a change to their values, React will
- * automatically update (not fully re-render) the HTML needed.
- * 
- * props and state are similar in the sense that they manage
- * the data of this component. A change to their values will
- * cause the view (HTML) to change accordingly.
- * 
- * Usually, props is passed and changed by the parent component;
- * state is the internal value of the component and managed by
- * the component itself.
- */
 class App extends React.Component<Props, GameState> {
-  private initialized: boolean = false;
-  private gameState: State = State.Initialize;
-  private initializeCount: number = 0;
+  private initialized: boolean = false
+  private gameEnd: boolean = false
+  private gameState: State = State.Initialize
+  private initializeCount: number = 0
 
   static API_ENDPOINTS = ['/initialize', '/move', '/build']
   
@@ -62,6 +48,11 @@ class App extends React.Component<Props, GameState> {
     'Need a position to build a tower!',
   ]
   static SELECT_LEN = [2, 1, 1]
+  static INSTRUCTIONS = [
+    'Select two empty spaces to initialize your workers',
+    'Choose a worker and select where it will move to',
+    'Select an available space to build a block',
+  ]
 
   /**
    * @param props has type Props
@@ -71,16 +62,22 @@ class App extends React.Component<Props, GameState> {
     /**
      * state has type GameState as specified in the class inheritance.
      */
-    this.state = { cells: [], player: 0, winner: -1 };
+    this.state = { cells: [], player: 0, winner: -1, positionX: 0, positionY: 0 };
   }
 
   updateState(json: any) {
-    this.setState({cells: json['cells'], player: json['player'], winner: json['winner']});
+    this.setState({cells: json['cells'], player: json['player'], winner: json['winner'], positionX: json['positionX'], positionY: json['positionY']});
   }
 
   makeApiCall = async (url: string) => {
-    const response = await fetch(url)
-    return await response.json()
+    let json
+    try {
+      const response = await fetch(url)
+      json = await response.json()
+    } catch (error) {
+      return null
+    }
+    return json
   }
 
   /**
@@ -89,13 +86,17 @@ class App extends React.Component<Props, GameState> {
    * just an issue of Javascript.
    */
   newGame = async () => {
+    this.gameEnd = false
+    this.gameState = State.Initialize
+    this.initializeCount = 0
     const json = await this.makeApiCall('/newgame')
     this.updateState(json);
   }
 
   select(x: number, y: number): React.MouseEventHandler {
     return async (e) => {
-      e.preventDefault();
+      e.preventDefault()
+      if (this.gameEnd) return
       const maxSelected = this.gameState === State.Initialize ? 2 : 1;
       if (maxSelected === 1) {
         selectedCells = [new Vector2D(x, y)];
@@ -128,8 +129,9 @@ class App extends React.Component<Props, GameState> {
         url += `x${i}=${selectedCells[i].getX()}&y${i}=${selectedCells[i].getY()}`
       }
       const json = await this.makeApiCall(url)
-      if (json) this.updateState(json)
       selectedCells = []
+      if (json) this.updateState(json)
+      else return false
       return true
     } else {
       alert(App.ALERT_MESSAGES[currentState])
@@ -138,55 +140,76 @@ class App extends React.Component<Props, GameState> {
   };
   
   confirm = async () => {
-    switch (this.gameState) {
-      case State.Initialize:
-        if (await this.handleAction(State.Initialize)) {
-          if (++this.initializeCount >= 2) this.gameState = State.Move;
-        }
-        break
-  
-      case State.Move:
-        if (await this.handleAction(State.Move)) {
-          this.gameState = State.Build
-        }
-        break
-  
-      case State.Build:
-        if (await this.handleAction(State.Build)) {
-          this.gameState = State.Move
-        }
-        break
-  
-      default:
-        console.warn('Unknown game state:', this.gameState);
-        break
+    try {
+      switch (this.gameState) {
+        case State.Initialize:
+          if (await this.handleAction(State.Initialize)) {
+            ++this.initializeCount
+            if (this.initializeCount >= 2) this.gameState = State.Move
+          } else {
+            throw new Error("Failed to initialize workers!")
+          }
+          break
+        case State.Move:
+          if (await this.handleAction(State.Move))
+            this.gameState = State.Build
+          else throw new Error("Failed to move worker! Please select valid space.")
+          break
+        case State.Build:
+          if (await this.handleAction(State.Build))
+            this.gameState = State.Move
+          else throw new Error("Failed to build new block! Please select valid space.")
+          break
+        default:
+          throw new Error('Unknown game state:', this.gameState)
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message)
+      }
     }
-  };
+  }
   
 
   chooseWorker(index: number): React.MouseEventHandler {
     return async (e) => {
-      // prevent the default behavior on clicking a link; otherwise, it will jump to a new page.
       e.preventDefault();
-      const response = await fetch(`/chooseworker?index=${index}`)
-      const json = await response.json();
-      this.updateState(json);
+      if (this.gameState !== State.Move) return
+      const json = await this.makeApiCall(`/chooseworker?index=${index - 1}`)
+      selectedCells = []
+      this.updateState(json)
     }
   }
 
+  isAdjacent(x: number, y: number): boolean {
+    return Math.abs(x - this.state.positionX) <= 1 
+        && Math.abs(y - this.state.positionY) <= 1
+  }
+
   createCell(cell: Cell, index: number): React.ReactNode {
-    selectedCells.forEach( (item) => {
-      if(item.equal(cell.x, cell.y)) {
-        cell.selected = true
-      }
-    })
-    return (
-      <div key={index}>
-        <a href='/' onClick={this.select(cell.x, cell.y)}>
-          <BoardCell cell={cell}></BoardCell>
-        </a>
-      </div>
-    )
+    cell.available = this.gameState === State.Initialize || this.isAdjacent(cell.x, cell.y)
+    cell.selected = selectedCells.some(item => item.equal(cell.x, cell.y))
+    if (cell.playerId === this.state.player && this.gameState === State.Move) {
+      return (
+        <div key={index} id="grid">
+          <a href='/' onClick={this.chooseWorker(cell.workerId)}>
+            <BoardCell cell={cell} player = {this.state.player} positionX={this.state.positionX} positionY={this.state.positionY}></BoardCell>
+          </a>
+        </div>
+      )
+    } else if (cell.available && cell.playerId < 0) {
+      return (
+        <div key={index} id="grid">
+          <a href='/' onClick={this.select(cell.x, cell.y)}>
+            <BoardCell cell={cell} player = {this.state.player} positionX={this.state.positionX} positionY={this.state.positionY}></BoardCell>
+          </a>
+        </div>
+      )
+    } else {
+      return (
+        <div key={index} id="grid"><a><BoardCell cell={cell} player={this.state.player} positionX={this.state.positionX} positionY={this.state.positionY}></BoardCell></a></div>
+      )
+    }
   }
 
   /**
@@ -205,15 +228,6 @@ class App extends React.Component<Props, GameState> {
     }
   }
 
-  checkPlayer(): string {
-    if (this.state.winner >= 0) {
-      return "Player " + this.state.winner.toString() + " wins!!!";
-    }
-    else {
-      return "Current Player: player " + this.state.player.toString();
-    }
-  }
-
   /**
    * The only method you must define in a React.Component subclass.
    * @returns the React element via JSX.
@@ -226,21 +240,19 @@ class App extends React.Component<Props, GameState> {
      * @see https://reactjs.org/docs/introducing-jsx.html
      */
     return (
-      <div>
-        <div id="board">
-          {this.state.cells.map((cell, i) => this.createCell(cell, i))}
-        </div>
-        <div id="bottombar">
-          <button onClick={this.newGame}>New Game</button>
-          <button onClick={this.confirm}>Confirm</button>
-        </div>
-        <div id="bottombar">
-          <button onClick={this.chooseWorker(0)}>Worker1</button>
-          <button onClick={this.chooseWorker(1)}>Worker2</button>
-        </div>
+      <div id="game-container">
         <div id="instructions">
-          <div>=== Instructions ===</div>
-          <div>{this.checkPlayer()}</div>
+          <div><text className={`player${this.state.player}-text`}>{`Player ${this.state.player}`}</text><text>{this.state.winner > 0 ? " WINS !!!" : ""}</text></div>
+          <div>{this.state.winner > 0 ? "" : App.INSTRUCTIONS[this.gameState]}</div>
+        </div>
+        <div id="board-buttons-container">
+          <div id="board">
+            {this.state.cells.map((cell, i) => this.createCell(cell, i))}
+          </div>
+          <div id="buttons-container">
+            <button className="select" onClick={this.newGame}>New Game</button>
+            <button className="select" onClick={this.confirm}>Confirm</button>
+          </div>
         </div>
       </div>
     );

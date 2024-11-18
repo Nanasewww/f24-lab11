@@ -116,6 +116,10 @@ public class GameManager {
         return this.map;
     }
 
+    public Worker getCurrentWorker() {
+        return this.currentPlayer.getCurrentWorker();
+    }
+
     private boolean checkPosition(Vector2D target, Space source, ValidChecker checker) {
         return target.checkValid() && 
             checker.checkCondition(source, map.getSpace(target));
