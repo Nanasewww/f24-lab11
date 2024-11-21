@@ -15,6 +15,18 @@ npm install
 npm start
 ```
 
-This will start the front-end server at http://localhost:3000. You can update the front-end code as the server is running in the development mode (i.e., npm start). It will automatically recompile and reload.
+This will start the front-end server at http://localhost:3000.
 
-> Note: it's essential to have both the frontend and backend servers running simultaneously. If you need to work on the front end without disrupting the back end, consider opening another terminal window while keeping the previous one running.
+## How to Play Santorino ##
+
+1. Two players take turns to initialize both of the workers (one by one)
+
+2. Start a new turn, repeat:
+
+    1) Current player selects a worker and chooses a moving destination
+        a. Click on the worker to select different workers
+        b. the worker cannot be changed after movement this turn
+        
+    2) After movement, current player choose a space to build a block
+
+3. If a worker is standing on a level-3 tower, the player wins

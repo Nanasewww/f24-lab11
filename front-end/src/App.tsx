@@ -1,5 +1,5 @@
 import React from 'react';
-import './App.css'; // import the css file to enable your styles.
+import './App.css'; 
 import { GameState, Cell } from './game';
 import BoardCell from './Cell';
 
@@ -26,12 +26,6 @@ class Vector2D {
   }
 }
 
-enum State {
-  Initialize = 0,
-  Move = 1,
-  Build = 2
-}
-
 let selectedCell: Vector2D[] = [];
 
 class App extends React.Component<Props, GameState> {
@@ -39,25 +33,35 @@ class App extends React.Component<Props, GameState> {
   private gameEnd: boolean = false
 
   static INSTRUCTIONS = [
-    'Select two empty spaces to initialize your workers',
-    'Choose a worker and select where it will move to',
-    'Select an available space to build a block',
+    'Select an empty space to initialize your worker.',
+    'Choose a worker and select moving destination.',
+    'Select an available space to build a block.',
   ]
 
   symbols: string[] = ['A', 'B']
 
   /**
-   * @param props has type Props
+   * Constructor to initialize the component with props and initial state.
+   * @param props Props passed to the component.
    */
   constructor(props: Props) {
     super(props)
     this.state = { cells: [], player: 0, winner: -1, positionX: 0, positionY: 0, stateText: "Initialize" };
   }
 
+  /**
+   * Updates the component state with data returned from the API call.
+   * @param json The JSON data returned from the API.
+   */
   updateState(json: any) {
     this.setState({cells: json['cells'], player: json['player'], winner: json['winner'], positionX: json['positionX'], positionY: json['positionY'], stateText: json['stateText']});
   }
 
+  /**
+   * Makes an API call to the specified URL and returns the JSON response.
+   * @param url The API endpoint URL.
+   * @returns The JSON response or null if an error occurs.
+   */
   makeApiCall = async (url: string) => {
     let json
     try {
@@ -70,9 +74,7 @@ class App extends React.Component<Props, GameState> {
   }
 
   /**
-   * Use arrow function, i.e., () => {} to create an async function,
-   * otherwise, 'this' would become undefined in runtime. This is
-   * just an issue of Javascript.
+   * Starts a new game by calling the `/newgame` API and updating the state.
    */
   newGame = async () => {
     this.gameEnd = false
@@ -80,6 +82,12 @@ class App extends React.Component<Props, GameState> {
     this.updateState(json);
   }
 
+  /**
+   * Handles the selection of a cell and updates the game state accordingly.
+   * @param x The x-coordinate of the selected cell.
+   * @param y The y-coordinate of the selected cell.
+   * @returns A React MouseEventHandler to handle the click event.
+   */
   select(x: number, y: number): React.MouseEventHandler {
     return async (e) => {
       e.preventDefault()
@@ -91,11 +99,8 @@ class App extends React.Component<Props, GameState> {
   }
 
   /**
-   * play will generate an anonymous function that the component
-   * can bind with.
-   * @param x 
-   * @param y 
-   * @returns 
+   * Confirms the action for the selected cell, making an API call to execute it.
+   * Resets the selected cell after the action.
    */
   confirm = async () => {
     try {
@@ -112,6 +117,11 @@ class App extends React.Component<Props, GameState> {
     }
   }
   
+  /**
+   * Handles the selection of a worker by its index and updates the state.
+   * @param index The index of the selected worker.
+   * @returns A React MouseEventHandler to handle the click event.
+   */
   chooseWorker(index: number): React.MouseEventHandler {
     return async (e) => {
       e.preventDefault();
@@ -121,6 +131,12 @@ class App extends React.Component<Props, GameState> {
     }
   }
 
+  /**
+   * Creates a cell element to render on the board based on its properties.
+   * @param cell The cell data.
+   * @param index The index of the cell in the grid.
+   * @returns A ReactNode representing the cell.
+   */
   createCell(cell: Cell, index: number): React.ReactNode {
     if (cell.playerId === this.state.player) {
       return (
@@ -149,21 +165,21 @@ class App extends React.Component<Props, GameState> {
     }
   }
 
-  /**
-   * This function will call after the HTML is rendered.
-   * We update the initial state by creating a new game.
-   * @see https://reactjs.org/docs/react-component.html#componentdidmount
+ /**
+   * Called after the component is mounted. Initializes a new game.
+   * Ensures this logic runs only once by using the `initialized` flag.
    */
   componentDidMount(): void {
-    /**
-     * setState in DidMount() will cause it to render twice which may cause
-     * this function to be invoked twice. Use initialized to avoid that.
-     */
     if (!this.initialized) {
       this.newGame();
       this.initialized = true;
     }
   }
+
+  /**
+   * Returns the instruction string based on the current game state.
+   * @returns The appropriate instruction string.
+   */
   getInstruction(): string {
     switch (this.state.stateText) {
       case "Initialize":
@@ -177,16 +193,10 @@ class App extends React.Component<Props, GameState> {
   }
 
   /**
-   * The only method you must define in a React.Component subclass.
-   * @returns the React element via JSX.
-   * @see https://reactjs.org/docs/react-component.html
+   * Renders the game UI, including the board, instructions, and buttons.
+   * @returns A ReactNode representing the game UI.
    */
   render(): React.ReactNode {
-    /**
-     * We use JSX to define the template. An advantage of JSX is that you
-     * can treat HTML elements as code.
-     * @see https://reactjs.org/docs/introducing-jsx.html
-     */
     return (
       <div id="game-container">
         <div id="instructions">

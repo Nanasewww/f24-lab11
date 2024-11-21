@@ -68,13 +68,13 @@ public class GameState {
 }
 
 class Cell {
-    private final int x;
-    private final int y;
-    private final int playerId;
-    private final int workerId;
-    private final int height;
-    private final boolean selected;
-    private final boolean available;
+    private final int x;         // The x-coordinate of the cell on the board
+    private final int y;         // The y-coordinate of the cell on the board
+    private final int playerId;  // The ID of the player who owns the cell (-1 if unowned)
+    private final int workerId;  // The ID of the worker on this cell (-1 if no worker is present)
+    private final int height;    // The height of the tower built on this cell (0-4)
+    private final boolean selected;   // Indicates whether the cell is currently selected
+    private final boolean available;  // Indicates whether the cell is available for an action
 
     Cell(int x, int y, int playerId, int workerId, int height, boolean selected, boolean available) {
         this.x = x;

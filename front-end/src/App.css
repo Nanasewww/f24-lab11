@@ -97,7 +97,7 @@ body {
 .tower-1 { height: 29px; }
 .tower-2 { height: 58px; }
 .tower-3 { height: 87px; }
-.tower-4 { height: 116px; } 
+.tower-4 { height: 116px; background-color: #1e88e5;} 
 
 .tower-label {
   position: absolute;

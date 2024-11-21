@@ -24,7 +24,6 @@ class BoardCell extends React.Component<Props> {
       style = this.props.cell.selected? 'selected player' + this.props.player : style
     }
     return (
-      //<div className={`cell ${style}`}>{this.props.cell.text}</div>
       <div className={`cell ${style}`}>
         <div className={`tower tower-${this.props.cell.height}`}></div>
         <div className="player">{this.props.cell.workerId > 0 ? this.symbols[this.props.cell.playerId-1] + this.props.cell.workerId : ""}</div>

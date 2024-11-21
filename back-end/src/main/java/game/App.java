@@ -48,18 +48,18 @@ public class App extends NanoHTTPD {
         Vector2D target;
         try {
             switch (uri) {
-                case "/newgame":
+                case "/newgame" -> {  // start a new game
                     this.gameManager = new GameManager(2);
                     resetSelected();
-                    break;
-                case "/action":
+                }
+                case "/action" -> {  // perform an action (move, build, etc.)
                     target = new Vector2D(Integer.parseInt(params.get("x")), Integer.parseInt(params.get("y")));
                     if (!this.gameManager.handleAction(target)) {
                         throw new Exception("transction: Failed: invalid space");
                     }
                     resetSelected();
-                    break;
-                case "/select":
+                }
+                case "/select" -> {  // select a cell
                     target = new Vector2D(Integer.parseInt(params.get("x")), Integer.parseInt(params.get("y")));
                     if (this.gameManager.checkTarget(target)) {
                         int s = 5 * target.y + target.x;
@@ -67,12 +67,12 @@ public class App extends NanoHTTPD {
                         selected[s] = !selected[s];
                         lastSelected = s;
                     }
-                    break;
-                case "/chooseworker":
+                }
+                case "/chooseworker" -> {  // choose a worker
                     this.gameManager.chooseWorker(Integer.parseInt(params.get("index")));
-                    break;
-                default:
-                    throw new Exception("The requested resource does not exist");
+                    resetSelected();
+                }
+                default -> throw new Exception("The requested resource does not exist");  // If an error occurs, return a "Not Acceptable" response with the error message
             }
         } catch (Exception e) {
             return newFixedLengthResponse(Response.Status.NOT_ACCEPTABLE, MIME_PLAINTEXT, e.getMessage());
@@ -80,11 +80,5 @@ public class App extends NanoHTTPD {
         // Extract the view-specific data from the game and apply it to the template.
         GameState gameplay = GameState.forGame(this.gameManager, this.selected);
         return newFixedLengthResponse(gameplay.toString());
-    }
-
-    public static class Test {
-        public String getText() {
-            return "Hello World!";
-        }
     }
 }

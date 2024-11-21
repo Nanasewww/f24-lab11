@@ -99,6 +99,10 @@ public class GameManager {
         return "";
     }
 
+    public void nextState() {
+
+    }
+
     /**
      * Move current worker to the given position for initialization.
      * @param target The position to move to.
